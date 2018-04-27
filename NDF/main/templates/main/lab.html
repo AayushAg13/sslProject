@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ lab.name }}|Home Page</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.13/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.13/js/jquery.dataTables.js"></script>
+    {% load static %}
+    <script>
+        $(document).ready(function () {
+            $('#studsApproved').DataTable();
+            $('#studsNotApproved').DataTable();
+            $('#studsApproved').hide();
+            $('#studsApproved_length').hide();
+            $('#studsApproved_filter').hide();
+            $('#studsApproved_info').hide();
+            $('#studsApproved_paginate').hide();
+            $('#headingApproved').hide();
+                        $('#select-all-pending').on('click', function () {
+                // Get all rows with search applied
+                var rows = $('#studsNotApproved').DataTable().rows().nodes();
+                // Check/uncheck checkboxes for all rows in the table
+                $('input[type="checkbox"]', rows).prop('checked', this.checked);
+
+                // Iterate over all checkboxes in the table
+                $('input[type="checkbox"]',rows).each(function () {
+                    // If checkbox doesn't exist in DOM
+                    if ($.contains(document, this)) {
+                        // If checkbox is checked
+                        if (this.checked) {
+                            update_status(this.id);
+                        }
+                    }
+                });
+            });
+            $('#select-all-approved').on('click', function () {
+                // Get all rows with search applied
+                var rows = $('#studsApproved').DataTable().rows().nodes();
+                // Check/uncheck checkboxes for all rows in the table
+                $('input[type="checkbox"]', rows).prop('checked', this.checked);
+
+
+                // Iterate over all checkboxes in the table
+                $('input[type="checkbox"]',rows).each(function () {
+                    // If checkbox doesn't exist in DOM
+                    if ($.contains(document, this)) {
+                        // If checkbox is checked
+                        if (! (this.checked)) {
+                            update_status(this.id);
+                        }
+                    }
+                });
+            });
+        });
+
+
+        function update_remarks(id) {
+            var typingTimer;                //timer identifier
+            var doneTypingInterval = 1;  //time in ms, 1 second for example
+            var $input = $('#' + id);
+
+            //on keyup, start the countdown
+            $input.on('keyup', function () {
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(doneTyping, doneTypingInterval);
+            });
+
+            //on keydown, clear the countdown
+            $input.on('keydown', function () {
+                clearTimeout(typingTimer);
+            });
+
+            //user is "finished typing," do something
+            function doneTyping() {
+                var remarks = $('#' + id)[0].innerText;
+                var stud_roll_no = id;
+                var lab_webmail = "{{ lab.webmail }}";
+                $.ajax({
+                    type: "GET",
+                    url: "/update_lab_remarks",
+                    data: {
+                        stud_roll_no: stud_roll_no,
+                        lab_webmail: lab_webmail,
+                        remarks: remarks
+                    },
+                    success: function (data) {
+                        $('#' + data.webmail + 'time').html(data.datetime);
+                    },
+                    error: function () {
+                    }
+                });
+            }
+        }
+        function update_status(id) {
+            var stud_webmail = id;
+            var lab_webmail = "{{ lab.webmail }}";
+            var row_id = id + 'row';
+            $.ajax({
+                type: "GET",
+                url: "/update_lab_status",
+                data: {
+                    stud_webmail: stud_webmail,
+                    lab_webmail: lab_webmail
+                },
+                success: function (data) {
+                    $('#' + data.webmail + 'time').html(data.datetime);
+                    table_approved = $('#studsApproved').DataTable();
+                    table_not_approved = $('#studsNotApproved').DataTable();
+                    if ($('#' + id).is(":checked")) {
+                        var row = table_not_approved.row($('#' + id).parents('tr'));
+                        var rowNode = row.node();
+                        row.remove();
+                        table_not_approved.draw();
+                        table_approved.row.add(rowNode)
+                        table_approved.draw();
+                        {#                        $('#' + row_id).detach().prependTo('#studentlistapproved');#}
+                    }
+                    else {
+                        var row = table_approved.row($('#' + id).parents('tr'));
+                        var rowNode = row.node();
+                        row.remove();
+                        table_approved.draw();
+                        table_not_approved.row.add(rowNode)
+                        table_not_approved.draw();
+                    }
+                },
+                error: function () {
+                    //
+                }
+            });
+        }
+        function showApproved() {
+            $('#studsApproved').show(); // first of it shown
+            $('#studsApproved_length').show();
+            $('#studsApproved_filter').show();
+            $('#studsApproved_info').show();
+            $('#studsApproved_paginate').show();
+            $('#headingApproved').show();
+
+            $('#studsNotApproved_length').hide();
+            $('#studsNotApproved_filter').hide();
+            $('#studsNotApproved_info').hide();
+            $('#studsNotApproved_paginate').hide();
+            $('#studsNotApproved').hide();
+            $('#headingPending').hide();
+
+        }
+
+
+        function showNotApproved() {
+            $('#studsNotApproved').show(); // first of it shown
+            $('#studsNotApproved_length').show();
+            $('#studsNotApproved_filter').show();
+            $('#studsNotApproved_info').show();
+            $('#studsNotApproved_paginate').show();
+            $('#headingPending').show();
+
+
+            $('#studsApproved').hide();
+            $('#studsApproved_length').hide();
+            $('#studsApproved_filter').hide();
+            $('#studsApproved_info').hide();
+            $('#studsApproved_paginate').hide();
+            $('#headingApproved').hide();
+        }
+    </script>
+    <style>
+        /* Remove the navbar's default margin-bottom and rounded borders */
+        .navbar {
+            margin-bottom: 0;
+            border-radius: 0;
+            z-index: 1000;
+            width: 100%;
+            position: fixed;
+        }
+
+        /* Set height of the grid so .sidenav can be 100% (adjust as needed) */
+        .row.content {
+            height: 450px
+        }
+
+        /* Set gray background color and 100% height */
+
+        .check-right {
+            padding-top: 20px;
+            background-color: #b3ffb3;
+            height: 100%;
+        }
+
+        .check-left {
+            padding-top: 20px;
+            background-color: #ffcccc;
+            height: 100%;
+        }
+
+        /* Set black background color, white text and some padding */
+        footer {
+            background-color: #555;
+            color: white;
+            padding: 5px;
+            bottom: 0px;
+            position: fixed;
+            width: 100%;
+
+        }
+
+        /* On small screens, set height to 'auto' for sidenav and grid */
+        @media screen and (max-width: 767px) {
+            .row.content {
+                height: auto;
+            }
+        }
+
+        #studsApproved {
+            width: 90% !Important;
+        }
+
+        #studsNotApproved {
+            width: 90% !Important;
+        }
+
+        #studsNotApproved_length {
+            margin-left: 5% !Important;
+        }
+
+        #studsApproved_length {
+            margin-left: 5% !Important;
+        }
+
+        #studsApproved_filter {
+            margin-right: 5% !Important;
+        }
+
+        #studsNotApproved_filter {
+            margin-right: 5% !Important;
+        }
+
+        #studsApproved_info {
+            margin-left: 5% !Important;
+        }
+
+        #studsNotApproved_info {
+            margin-left: 5% !Important;
+        }
+
+        #studsApproved_paginate {
+            margin-right: 5% !Important;
+        }
+
+        #studsNotApproved_paginate {
+            margin-right: 5% !Important;
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid" style="z-index: 1000">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Welcome {{ lab.name }}!</a>
+        </div>
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav navbar-right">
+                <li id="Approved"><a onclick="showApproved()" href="#"><span>Approved</span></a></li>
+                <li id="NotApproved"><a onclick="showNotApproved()" href="#"><span>Pending</span></a></li>
+                <li><a href="{% url 'main:logout_user' %}">Logout <span class="glyphicon glyphicon-log-out"></span> </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid text-center" style="padding-top:70px">
+    <div class="row content">
+        <div class="well">
+            <h2 id="headingApproved">Approved Requests of Students</h2>
+            <h2 id="headingPending">Pending Requests of Students</h2>
+        </div>
+        <table id="studsNotApproved" class="display" , border="1" width="100%">
+            <thead align="center">
+            <tr>
+                <th>RollNo</th>
+                <th>Name</th>
+                <th>Webmail</th>
+                <th>Department</th>
+                <th id="pending_th">Toggle All &nbsp&nbsp<input type="checkbox" name="select_all" value="1" id="select-all-pending"></th>
+                <th>Remarks</th>
+                <th>Last Updated</th>
+            </tr>
+            </thead>
+            <tbody id="studentlistpending">
+            {% for stud, status, remarks, update_time in students %}
+                {% if status is False %}
+                    <tr id="{{ stud.webmail }}row">
+                        <td>{{ stud.roll_no }}</td>
+                        <td>{{ stud.name }}</td>
+                        <td>{{ stud.webmail }}</td>
+                        <td>{{ stud.department }}</td>
+                        <td><input type="checkbox" onclick="update_status(this.id)"
+                                {% if status is True %}
+                                   checked
+                                {% endif %}
+                                   id="{{ stud.webmail }}"
+                        />
+                        </td>
+                        <td style="padding:0px; height:100%">
+                            <div style="height:100%" contenteditable id="{{ stud.roll_no }}"
+                                 onkeyup="update_remarks(this.id)">
+                                {{ remarks }}</div>
+                        </td>
+                        <td><span id="{{ stud.webmail }}time">{{ update_time }}</span></td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <table id="studsApproved" class="display" , border="1" width="100%">
+            <thead align="center">
+            <tr>
+                <th>RollNo</th>
+                <th>Name</th>
+                <th>Webmail</th>
+                <th>Department</th>
+                <th  id = "approved_th">Toggle All &nbsp&nbsp<input type="checkbox" checked name="select_all" value="1" id="select-all-approved"></th>
+                <th>Remarks</th>
+                <th>Last Updated</th>
+            </tr>
+            </thead>
+            <tbody id="studentlistapproved">
+            {% for stud, status, remarks, update_time in students %}
+                {% if status is True %}
+                    <tr id="{{ stud.webmail }}row">
+                        <td>{{ stud.roll_no }}</td>
+                        <td>{{ stud.name }}</td>
+                        <td>{{ stud.webmail }}</td>
+                        <td>{{ stud.department }}</td>
+                        <td><input type="checkbox" onclick="update_status(this.id)"
+                                {% if status is True %}
+                                   checked
+                                {% endif %}
+                                   id="{{ stud.webmail }}"
+                        />
+                        </td>
+                        <td style="padding:0px; height:100%">
+                            <div style="height:100%" contenteditable id="{{ stud.roll_no }}"
+                                 onkeyup="update_remarks(this.id)">
+                                {{ remarks }}</div>
+                        </td>
+                        <td><span id="{{ stud.webmail }}time">{{ update_time }}</span></td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+
+<footer class="container-fluid text-center">
+    <div class="col-lg-6">
+           <p style="font-size:1.0em; text-align:left;">&copy; 2017 IIT Guwahati</p>
+    </div>
+    <div class="col-lg-6" style="text-align:right;">
+        <p style="font-size:1.0em; text-align:right;">Developed By :  &nbsp&nbsp <a href="https://www.facebook.com/meet.555.patoliya" style="color:#169FD8;text-decoration:none;">Patoliya Meetkumar</a></p>
+    </div>
+</footer>
+</html>

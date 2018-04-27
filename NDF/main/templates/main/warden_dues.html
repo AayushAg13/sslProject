@@ -1,0 +1,92 @@
+{% extends 'main/base_nodues.html' %}
+
+{% block title %}
+    {{ warden.name }}Home Page|Dues
+{% endblock %}
+
+{% block name %}
+    {{ warden.name }}
+{% endblock %}
+
+{% block js %}
+<script>
+$(document).ready(function () {
+    $('#studsNotApproved').DataTable();
+});
+function update_status(id, remarks) {
+    console.log(remarks);
+    var stud_webmail = id;
+    var row_id = id + 'row';
+    var dues = 1;
+    if($('#' + id + "1").is(":checked")){
+      dues = 0;
+    }
+    remarks = document.getElementById(remarks).value;
+    console.log(remarks);
+    $.ajax({
+        type: "GET",
+        url: "/hostel_update",
+        data: {
+            stud_webmail: stud_webmail,
+            dues: dues,
+            remarks : remarks,
+            webmail : "{{ webmail }}",
+            flag : "{{ flag }}",
+        },
+        success: function (data) {
+          console.log(data.dues);
+
+          if(data.dues == 0){
+            table_not_approved = $('#studsNotApproved').DataTable();
+            var row = table_not_approved.row($('#' + id).parents('tr'));
+            var rowNode = row.node();
+            row.remove();
+            table_not_approved.draw();
+          }
+          else{
+            $('#' + data.webmail + 'time').html(data.datetime);
+          }
+        },
+        error: function () {
+            //
+        }
+    });
+}
+function upd_all() {
+  var table = document.getElementById("studsNotApproved");
+  var cells = table.getElementsByTagName("button");
+  for (var i = 0; i < cells.length; i++) {
+      cells[i].click();
+  }
+}
+</script>
+{% endblock %}
+
+{% block heading %}
+  Pending Requests of Students
+{% endblock %}
+
+{% block studentlistpending %}
+{% for stud,remarks,update_time in context %}
+        <tr>
+            <td>{{ stud.roll_no }}</td>
+            <td>{{ stud.name }}</td>
+            <td>{{ stud.webmail }}</td>
+            <td>{{ stud.department }}</td>
+            <td><input type="checkbox"
+                       id="{{ stud.webmail }}1"
+                       name = "{{ stud.webmail }}"
+            /> </td>
+            <td style="padding:0px; height:100%">
+                <input type="text" name="" value="{{ remarks }}" id="{{ stud.roll_no }}">
+            </td>
+            <td><span id="{{ stud.webmail }}time">{{ update_time }}</span></td>
+            <td>
+              <button onclick="update_status(this.id, {{ stud.roll_no }})" id="{{ stud.webmail }}"
+                      class="updatebtn">
+                  Update
+              </button>
+            </td>
+        </tr>
+{% endfor %}
+{% endblock %}

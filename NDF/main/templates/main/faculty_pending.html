@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ faculty.name }}|Home Page</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.13/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.13/js/jquery.dataTables.js"></script>
+    {% load static %}
+    <script>
+        $(document).ready(function () {
+            $('#studsNotApproved').DataTable();
+            $('#student_search').keyup(function () {
+
+                var searchinput = $('#student_search').val();
+                if (searchinput.length >= 1) {
+                    $.ajax({
+                        type: "POST",
+                        url: "/search_students/",
+                        data: {
+                            csrfmiddlewaretoken: '{{csrf_token}}',
+                            searchquery: searchinput
+                        },
+                        success: function (data) {
+                            //add elements to dropdown list
+                            $('.items').remove();
+                            var json1 = data.students_searched;
+                            items = [];
+                            for (var key in json1) {
+                                if (items.length < 10) {
+                                    var value = json1[key];
+                                    items.push('<a class="items" id="' + key + '" onclick="addstudent(this.id)">' + value + '</a>');
+                                }
+                            }
+                            $('#myDropdown').append(items.join(''));
+                        },
+                        error: function () {
+                            //
+                        }
+                    });
+                }
+                else if (searchinput.length == 0) {
+                    $('.items').remove();
+                }
+            });
+            $('#select-all-pending').on('click', function () {
+                // Get all rows with search applied
+                var rows = $('#studsNotApproved').DataTable().rows().nodes();
+                // Check/uncheck checkboxes for all rows in the table
+                $('input[type="checkbox"]', rows).prop('checked', this.checked);
+
+                // Iterate over all checkboxes in the table
+                $('input[type="checkbox"]',rows).each(function () {
+                    // If checkbox doesn't exist in DOM
+                    if ($.contains(document, this)) {
+                        // If checkbox is checked
+                        if (this.checked) {
+                            update_status(this.id);
+                        }
+                    }
+                });
+            });
+
+        });
+
+        $(function () {
+            $('.dropbtn').click(function (e) {
+                $('.dropdown-content').slideToggle();
+                e.stopPropagation();
+            });
+            $('.dropdown-content').click(function (e) {
+                e.stopPropagation();
+            });
+            $(document).click(function () {
+                $('.dropdown-content').slideUp();
+            });
+        });
+
+
+        function deleteStudent(id) {
+            if (confirm("Are you sure to delete student?")) {
+                var rowId = id.replace(/delete/g, 'row');
+                var stud_webmail = id.replace(/delete/g, '');
+                $.ajax({
+                    type: "GET",
+                    url: "/delete_student",
+                    data: {
+                        stud_webmail: stud_webmail,
+                        faculty_webmail: "{{faculty.webmail}}"
+                    },
+                    success: function (data) {
+                        table_approved = $('#studsApproved').DataTable();
+                        table_not_approved = $('#studsNotApproved').DataTable();
+                        if ($('#' + stud_webmail).is(":checked")) {
+                            var row = table_approved.row($('#' + id).parents('tr'));
+                            var rowNode = row.node();
+                            row.remove();
+                            table_approved.draw();
+                        }
+                        else {
+                            var row = table_not_approved.row($('#' + id).parents('tr'));
+                            var rowNode = row.node();
+                            row.remove();
+                            table_not_approved.draw();
+                        }
+                    }
+                });
+            }
+        }
+
+        function addstudent(id) {
+            var student_webmail = id;
+            if (confirm("Are you sure to add student?")) {
+                $.ajax({
+                    type: "GET",
+                    url: "/add_student",
+                    data: {
+                        student_webmail: student_webmail
+                    },
+                    success: function (data) {
+                        table_not_approved = $('#studsNotApproved').DataTable();
+                        var name = data.name;
+                        if (name != " ") {
+                            var webmail = data.webmail;
+                            var roll_no = data.roll_no;
+                            var dept = data.dept;
+                            var status_checkbox = '<input type="checkbox" onclick="update_status(this.id)"id="' + webmail + '"/>';
+                            var delete_button = '<button onclick="deleteStudent(this.id)" id = "' + webmail + 'delete" class="deletebtn">Delete</button>';
+                            var updated_time_cell = '<span id="' + webmail + 'time">None</span>';
+                            var remarks_add = '<div "height:100%" contenteditable id="' + roll_no + '" onkeyup="update_remarks(this.id)">{{ remarks }}</div>';
+                            table_not_approved.row.add([roll_no, name, webmail, dept, status_checkbox, remarks_add, updated_time_cell, delete_button]).draw();
+
+                        }
+                        else {
+                            alert("Student was already added, details will be shown to you when student applies to clear dues!");
+                        }
+                    },
+                    error: function () {
+                        //
+                    }
+                });
+            }
+            $('.dropdown-content').slideUp();
+
+        }
+
+        function showNotApproved() {
+            $('#studsNotApproved').show(); // first of it shown
+            $('#studsNotApproved_length').show();
+            $('#studsNotApproved_filter').show();
+            $('#studsNotApproved_info').show();
+            $('#studsNotApproved_paginate').show();
+            $('#headingPending').show();
+{#            $('#pending_th')[0].innerHTML='Toggle All &nbsp&nbsp<input type="checkbox" name="select_all" value="1" id="select-all-pending">';#}
+        }
+        function update_status(id, remarks) {
+            console.log(remarks);
+            var stud_webmail = id;
+            var faculty_webmail = "{{ faculty.webmail }}";
+            var row_id = id + 'row';
+            var dues = 3;
+            if($('#' + id + "1").is(":checked")){
+              dues = 2;
+            }
+            var remarks = document.getElementById(remarks).value;
+            console.log(remarks)
+            $.ajax({
+                type: "GET",
+                url: "/update_faculty_status",
+                data: {
+                    stud_webmail: stud_webmail,
+                    dues: dues,
+                    remarks : remarks,
+                    faculty_webmail: faculty_webmail
+                },
+                success: function (data) {
+                    $('#' + data.webmail + 'time').html(data.datetime);
+                    table_not_approved = $('#studsNotApproved').DataTable();
+                    var row = table_not_approved.row($('#' + id).parents('tr'));
+                    var rowNode = row.node();
+                    row.remove();
+                    table_not_approved.draw();
+
+                },
+                error: function () {
+                    //
+                }
+            });
+
+        }
+
+    </script>
+    <style>
+        /* Remove the navbar's default margin-bottom and rounded borders */
+        .navbar {
+            margin-bottom: 0;
+            border-radius: 0;
+            z-index: 1000;
+            width: 100%;
+            position: fixed;
+        }
+
+        /* Set height of the grid so .sidenav can be 100% (adjust as needed) */
+        .row.content {
+            height: 450px
+        }
+
+        /* Set gray background color and 100% height */
+
+        .check-right {
+            padding-top: 20px;
+            background-color: #b3ffb3;
+            height: 100%;
+        }
+
+        .check-left {
+            padding-top: 20px;
+            background-color: #ffcccc;
+            height: 100%;
+        }
+
+        /* Set black background color, white text and some padding */
+        footer {
+            background-color: #555;
+            color: white;
+            padding: 5px;
+            bottom: 0px;
+            position: fixed;
+            width: 100%;
+        }
+
+        /* On small screens, set height to 'auto' for sidenav and grid */
+        @media screen and (max-width: 767px) {
+            .row.content {
+                height: auto;
+            }
+        }
+
+        .dropbtn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .deletebtn {
+            background-color: red;
+            color: white;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .dropbtn:hover, .dropbtn:focus {
+            background-color: #3e8e41;
+        }
+
+        #student_search {
+            background-image: url({% static "img/searchicon.png" %});
+            background-position: 14px 12px;
+            background-size: 25px 25px;
+            background-repeat: no-repeat;
+            font-size: 16px;
+            padding: 14px 20px 12px 45px;
+            border: none;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f6f6f6;
+            min-width: 230px;
+            overflow: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown a:hover {
+            background-color: #ddd
+        }
+
+        .show {
+            display: block;
+        }
+
+        #studsApproved {
+            width: 90% !Important;
+        }
+
+        #studsNotApproved {
+            width: 90% !Important;
+        }
+
+        #studsNotApproved_length {
+            margin-left: 5% !Important;
+        }
+
+        #studsApproved_length {
+            margin-left: 5% !Important;
+        }
+
+        #studsApproved_filter {
+            margin-right: 5% !Important;
+        }
+
+        #studsNotApproved_filter {
+            margin-right: 5% !Important;
+        }
+
+        #studsApproved_info {
+            margin-left: 5% !Important;
+        }
+
+        #studsNotApproved_info {
+            margin-left: 5% !Important;
+        }
+
+        #studsApproved_paginate {
+            margin-right: 5% !Important;
+        }
+
+        #studsNotApproved_paginate {
+            margin-right: 5% !Important;
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid" style="z-index: 1000">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Welcome {{ faculty.name }}!</a>
+        </div>
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav navbar-right">
+                <li id="Approved"><a  href="/faculty_approved"><span>Approved</span></a></li>
+                <li id="Rejcted"><a  href="/faculty_rejected"><span>Rejected</span></a></li>
+                <li id="NotApproved"><a href="/faculty_pending"><span>Pending</span></a></li>
+                <li><a href="{% url 'main:logout_user' %}">Logout <span class="glyphicon glyphicon-log-out"></span> </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid text-center" style="padding-top:70px">
+    <div class="row content">
+        <div class="well">
+            <h2 id="headingPending">Pending Requests of Students</h2>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Add student</button>
+            <div id="myDropdown" class="dropdown-content">
+                <input type="text" placeholder="Search by any detail..." id="student_search">
+            </div>
+        </div>
+        <table id="studsNotApproved" class="display" , border="1" width="100%">
+            <thead align="center">
+            <tr>
+                <th>RollNo</th>
+                <th>Name</th>
+                <th>Webmail</th>
+                <th>Department</th>
+                <th id="pending_th">Toggle All &nbsp&nbsp<input type="checkbox" name="select_all" value="1" id="select-all-pending"></th>
+                <th>Remarks</th>
+                <th>Last Updated</th>
+                <th>Delete Student</th>
+                <th>Update Student</th>
+            </tr>
+            </thead>
+            <tbody id="studentlistpending">
+            {% for stud, status, remarks, update_time in students %}
+                    <tr id="{{ stud.webmail }}row">
+                        <td>{{ stud.roll_no }}</td>
+                        <td>{{ stud.name }}</td>
+                        <td>{{ stud.webmail }}</td>
+                        <td>{{ stud.department }}</td>
+                        <td>
+
+                          <input type="radio" checked
+                                   id="{{ stud.webmail }}1"
+                                   name = "{{ stud.webmail }}choice"
+                        /> No Dues<br>
+                        <input type="radio"  value = "Dues"
+                                   id="{{ stud.webmail }}2"
+                                   name = "{{ stud.webmail }}choice"
+                        /> Dues
+
+                        </td>
+                        <td style="padding:0px; height:100%">
+                          <div style="height:100%" contenteditable
+                            >
+                            <input type="text" name="" value="{{ remarks }}" id="{{ stud.roll_no }}">
+                           </div>
+                        </td>
+                        <td><span id="{{ stud.webmail }}time">{{ update_time }}</span></td>
+                        <td>
+                            <button onclick="deleteStudent(this.id)" id="{{ stud.webmail }}delete" class="deletebtn">
+                                Delete
+                            </button>
+                        </td>
+                        <td>
+                          <button onclick="update_status(this.id, {{ stud.roll_no }})" id="{{ stud.webmail }}"
+                                  class="updatebtn">
+                              Update
+                          </button>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+<footer class="container-fluid text-center">
+    <div class="col-lg-6">
+        <p style="font-size:1.0em; text-align:left;">&copy; 2017 IIT Guwahati</p>
+    </div>
+    <div class="col-lg-6" style="text-align:right;">
+        <p style="font-size:1.0em; text-align:right;">Developed By :  &nbsp&nbsp <a href="https://www.facebook.com/meet.555.patoliya" style="color:#169FD8;text-decoration:none;">Patoliya Meetkumar</a></p>
+    </div>
+</footer>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Lab Detail of {{ stud.name }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <style>
+        /* Remove the navbar's default margin-bottom and rounded borders */
+        .navbar {
+            margin-bottom: 0;
+            border-radius: 0;
+        }
+
+        /* Add a gray background color and some padding to the footer */
+        footer {
+            background-color: #f2f2f2;
+            padding: 10px;
+            bottom: 0;
+            width: 100%;
+            position : fixed;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row content">
+        <div class="col-sm-3 sidenav hidden-xs">
+            <h4>Welcome {{ stud.name }}!</h4>
+            <ul class="nav nav-pills nav-stacked">
+                <li><a href="{% url 'main:stud_profile' %}">Overall status</a></li>
+                <li><a href="{% url 'main:rules' %}">Instructions</a></li>
+                <li><a href="{% url 'main:logout_user' %}">Log out</a></li>
+            </ul>
+            <br>
+        </div>
+        <br>
+        <div class="col-sm-9">
+            <div class="well">
+                <h4>Details of Department</h4>
+            </div>
+            <table id="lab_list" class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>HOD</th>
+                    <th>Webmail</th>
+                    <th>No Dues Status</th>
+                    <th>Remarks</th>
+                    <th>Last Updated</th>
+                </tr>
+                </thead>
+                <tbody id="lablist">
+                    <tr>
+                        <td>
+                            {{ hod.name }}
+                        </td>
+                        <td>{{ hod.webmail }}</td>
+                        <td>
+                            {% if stud.hod_dues is False %}
+                                <span style="color: #11B54A">Clearence Given</span>
+                            {% else %}
+                                <span style="color:#e92916">Clearence Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ stud.hod_remarks }}
+                        </td>
+                        <td>
+                            {{ stud.hod_update_time }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table id="lab_list" class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>Labs/Library</th>
+                    <th>Incharge</th>
+                    <th>No Dues Status</th>
+                    <th>Remarks</th>
+                    <th>Last Updated</th>
+                </tr>
+                </thead>
+                <tbody id="lablist">
+                {% for labname, incharge, stat, remarks, time in details %}
+                    <tr>
+                        <td>
+                            {{ labname }}
+                        </td>
+                        <td>{{ incharge }}</td>
+                        <td>
+                            {% if stat is False %}
+                                <span style="color: #11B54A">Clearence Given</span>
+                            {% else %}
+                                <span style="color:#e92916">Clearence Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ remarks }}
+                        </td>
+                        <td>
+                            {{ time }}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+
+        </div>
+    </div>
+
+</div>
+
+<div id="wrapper">
+    <div id="header"></div>
+    <div id="content"></div>
+    <div id="footer"></div>
+</div>
+<footer class="container-fluid text-center">
+    <p>&copy; 2017 IIT Guwahati</p>
+    <p style="font-size:1.0em; text-align:center">Developed By : &nbsp&nbsp <a
+            href="https://www.facebook.com/meet.555.patoliya" style="color:#169FD8;text-decoration:none;">Meet
+        Patoliya</a></p>
+</footer>
+
+</body>
+</html>

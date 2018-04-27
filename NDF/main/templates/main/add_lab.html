@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Department Detail of{{ student.name }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% load static %}
+</head>
+
+<body>
+    <form method="POST">
+        {% csrf_token %}
+        Lab Name : <input name = "lab_name" type = "text"></input><br><br>
+        Department : <input type="text" name="dept" value = "{{ dept }}"></input><br><br>
+        Incharge : <input  type = "text" name="faculty1"></input><br><br>
+        <button type="submit" name="Submit">Submit</button>
+    </form>
+</body>

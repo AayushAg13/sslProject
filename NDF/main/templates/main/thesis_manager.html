@@ -1,0 +1,60 @@
+{% extends 'main/base.html' %}
+
+{% block title %}
+    {{ thesis_manager.name }}|Thesis Manager|Home Page
+{% endblock %}
+
+{% block name %}
+    {{ thesis_manager.name }}
+{% endblock %}
+
+{% block heading %}
+    Students
+{% endblock %}
+
+{% block Status %}{{ stud.submit_thesis }}{% endblock %}
+{% block Remarks%}{{ stud.submit_thesis_remarks }}{% endblock %}
+{%block Last_Updated%}{{ stud.submit_thesis_update_time }}{% endblock %}
+ {% block checkbox_init %}
+     {% if stud.submit_thesis is True %}
+         checked
+     {% endif %}
+ {% endblock %}
+{% block status_name %}"submit_thesis"{% endblock %}
+{% block remarks_name %}"submit_thesis_remarks"{% endblock %}
+
+{% block studentlistpending %}
+{% for stud in students %}
+    {% if stud.submit_thesis is False %}
+        <tr>
+            <td>{{ stud.roll_no }}</td>
+            <td>{{ stud.name }}</td>
+            <td>{{ stud.webmail }}</td>
+            <td>{{ stud.department }}</td>
+            <td><input type="checkbox" onclick="update_status(this.id)" id="{{ stud.webmail }}"/></td>
+            <td style="padding:0px; height:100%">
+                <div style="height:100%" contenteditable id="{{ stud.roll_no }}" onkeyup="update_remarks(this.id)">{{ stud.submit_thesis_remarks }}</div>
+            </td>
+            <td><span id="{{ stud.webmail }}time">{{ stud.submit_thesis_update_time }}</span></td>
+        </tr>
+    {% endif %}
+{% endfor %}
+{% endblock %}
+
+{% block studentlistapproved %}
+{% for stud in students %}
+    {% if stud.submit_thesis is True %}
+        <tr>
+            <td>{{ stud.roll_no }}</td>
+            <td>{{ stud.name }}</td>
+            <td>{{ stud.webmail }}</td>
+            <td>{{ stud.department }}</td>
+            <td><input type="checkbox" onclick="update_status(this.id)" checked id="{{ stud.webmail }}"/></td>
+            <td style="padding:0px; height:100%">
+               <div style="height:100%" contenteditable id="{{ stud.roll_no }}" onkeyup="update_remarks(this.id)">{{ stud.submit_thesis_remarks }}</div>
+            </td>
+            <td><span id="{{ stud.webmail }}time">{{ stud.submit_thesis_update_time }}</span></td>
+        </tr>
+    {% endif %}
+{% endfor %}
+{% endblock %}

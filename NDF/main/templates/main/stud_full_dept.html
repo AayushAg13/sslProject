@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Department Detail of{{ student.name }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    {% load static %}
+    <style>
+        /* Remove the navbar's default margin-bottom and rounded borders */
+        .navbar {
+            margin-bottom: 0;
+            border-radius: 0;
+        }
+
+        /* Add a gray background color and some padding to the footer */
+        footer {
+            background-color: #f2f2f2;
+            padding: 10px;
+            bottom: 0;
+            width : 100%;
+        }
+
+
+
+        .dropbtn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .dropbtn:hover, .dropbtn:focus {
+            background-color: #3e8e41;
+        }
+
+        #faculty_search {
+            background-image: url({% static "img/searchicon.png" %});
+            background-position: 14px 12px;
+            background-size: 25px 25px;
+            background-repeat: no-repeat;
+            font-size: 16px;
+            padding: 14px 20px 12px 45px;
+            border: none;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f6f6f6;
+            min-width: 230px;
+            overflow: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown a:hover {
+            background-color: #ddd
+        }
+
+        .show {
+            display: block;
+        }
+
+
+    </style>
+</head>
+
+<script>
+    $(document).ready(function () {
+        $('#faculty_search').keyup(function () {
+
+            var searchinput = $('#faculty_search').val();
+            if (searchinput.length >= 1) {
+                $.ajax({
+                    type: "POST",
+                    url: "/search_faculties/",
+                    data: {
+                        csrfmiddlewaretoken: '{{csrf_token}}',
+                        searchquery: searchinput
+                    },
+                    success: function (data) {
+                        //add elements to dropdown list
+                        $('.items').remove();
+                        var json1 = data.faculties_searched;
+                        items = [];
+                        for (var key in json1) {
+                            if (items.length < 10) {
+                                var value = json1[key];
+                                items.push('<a class="items" id="' + key + '" onclick="addfaculty(this.id)">' + value + '</a>');
+                            }
+                        }
+                        $('#myDropdown').append(items.join(''));
+                    },
+                    error: function () {
+                        //
+                    }
+                });
+            }
+            else if (searchinput.length == 0) {
+                $('.items').remove();
+            }
+        });
+    });
+
+    $(function () {
+        $('.dropbtn').click(function (e) {
+            $('.dropdown-content').slideToggle();
+            e.stopPropagation();
+        });
+        $('.dropdown-content').click(function (e) {
+            e.stopPropagation();
+        });
+        $(document).click(function () {
+            $('.dropdown-content').slideUp();
+        });
+    });
+
+    function addfaculty(id) {
+        var faculty_webmail = id;
+        if (confirm("Are you sure to add faculty?")) {
+            $.ajax({
+                type: "GET",
+                url: "/add_faculty",
+                data: {
+                    faculty_webmail: faculty_webmail
+                },
+                success: function (data) {
+                    var name = data.name;
+                    if (name != " ") {
+                        var remarks = data.remarks;
+                        var status = data.status;
+                        var temp = '<tr>' +
+                            '<td>' + name + '</td>' +
+                            '<td>{% if stat is 2 %}<span style="color: #11B54A">Approved</span>{% elif stat is 3 %}<span style="color:#e92916">Not Approved</span>{% else %}<span style="color:#e92916">Pending</span>{% endif %}' +
+                            '</td>' +
+                            '<td>' + remarks + '</td>' +
+                            '<td>None</td>' +
+                            '</tr>';
+
+
+                        $("#facultylist").append($(temp).fadeIn('slow'));
+                    }
+                    else {
+                        alert("Faculty was already added");
+                    }
+                },
+                error: function () {
+                    //
+                }
+            });
+        }
+
+        $('.dropdown-content').slideUp();
+
+    }
+
+</script>
+<body>
+<div class="container-fluid">
+    <div class="row content">
+        <div class="col-sm-3 sidenav hidden-xs">
+            <h4>Welcome {{ student.name }}!</h4>
+            <ul class="nav nav-pills nav-stacked">
+                <li><a href="{% url 'main:stud_profile' %}">Overall status</a></li>
+                <li><a href="{% url 'main:rules' %}">Instructions</a></li>
+                <li><a href="{% url 'main:logout_user' %}">Log out</a></li>
+            </ul>
+            <br>
+        </div>
+        <br>
+        <div class="col-sm-9">
+            <div class="well">
+                <div class="dropdown">
+                    <button class="dropbtn">Add faculty</button>
+
+                    <div id="myDropdown" class="dropdown-content">
+                        <input type="text" placeholder="Search by name or webmail.." id="faculty_search">
+
+
+                    </div>
+                </div>
+                <br>
+                <br>
+                <h5>
+                    Add BTP/MTP professors and other concerned faculties before you apply for clearing dues
+                </h5>
+
+            </div>
+               <table id="faculty_list" class="table table-bordered table-striped">
+                    <thead>
+                    <tr>
+                        <th>Faculty Name</th>
+                        <th>No Dues Status</th>
+                        <th>Remarks</th>
+                        <th>Last Updated</th>
+                    </tr>
+                    </thead>
+                    <tbody id="facultylist">
+                    {% for facultyname, stat, remarks, time in details %}
+                        <tr>
+                            <td>
+                                {{ facultyname }}
+                            </td>
+                            <td>
+                                {% if stat is 2 %}
+                                    <span style="color: #11B54A">Approved</span>
+                                {% elif stat is 3 %}
+                                    <span style="color:#e92916">Not Approved</span>
+                                {% else %}
+                                    <span style="color:#e92916">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ remarks }}
+                            </td>
+                            <td>
+                                {{ time }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<div id="wrapper">
+    <div id="header"></div>
+    <div id="content"></div>
+    <div id="footer"></div>
+</div>
+<footer class="container-fluid text-center">
+   <p>&copy; 2017 IIT Guwahati</p>
+    <p style="font-size:1.0em; text-align:center">Developed By :  &nbsp&nbsp <a href="https://www.facebook.com/meet.555.patoliya" style="color:#169FD8;text-decoration:none;">Meet Patoliya</a></p>
+</footer>
+
+</body>
+</html>
